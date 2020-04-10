@@ -78,6 +78,39 @@ class Customer {
       );
     }
   }
+
+  /** Returns the customer's first and last name */
+  fullName() {
+    return `${this.firstName} ${this.lastName}`;
+  }
+
+  /** seaches customers for a matching customer */
+  static async search(searchStr) {
+
+    let searchSplit = searchStr.split(' ');
+    let search1, search2;
+
+    if (searchSplit.length > 1) {
+      [search1, search2] = [searchSplit[0], searchSplit[1]];
+    } else {
+      search1 = searchSplit[0];
+      search2 = searchSplit[0];
+    }
+
+    const results = await db.query(`
+      SELECT id, 
+             first_name AS "firstName",  
+             last_name AS "lastName", 
+             phone, 
+             notes 
+        FROM customers
+        WHERE first_name LIKE '%$1%' OR
+              last_name LIKE '%$2%'`,
+              [search1, search2]);
+
+    return results.rows.map(c => new Customer(c));      
+  }
+
 }
 
 module.exports = Customer;
