@@ -18,10 +18,10 @@ class Customer {
 
   static async all() {
     const results = await db.query(
-      `SELECT id, 
-         first_name AS "firstName",  
-         last_name AS "lastName", 
-         phone, 
+      `SELECT id,
+         first_name AS "firstName",
+         last_name AS "lastName",
+         phone,
          notes
        FROM customers
        ORDER BY last_name, first_name`
@@ -33,11 +33,11 @@ class Customer {
 
   static async get(id) {
     const results = await db.query(
-      `SELECT id, 
-         first_name AS "firstName",  
-         last_name AS "lastName", 
-         phone, 
-         notes 
+      `SELECT id,
+         first_name AS "firstName",
+         last_name AS "lastName",
+         phone,
+         notes
         FROM customers WHERE id = $1`,
       [id]
     );
@@ -80,11 +80,11 @@ class Customer {
   }
 
   /** Returns the customer's first and last name */
-  fullName() {
+  get fullName() {
     return `${this.firstName} ${this.lastName}`;
   }
 
-  /** seaches customers for a matching customer */
+  // /** seaches customers for a matching customer */
   static async search(searchStr) {
 
     let searchSplit = searchStr.split(' ');
@@ -98,19 +98,49 @@ class Customer {
     }
 
     const results = await db.query(`
-      SELECT id, 
-             first_name AS "firstName",  
-             last_name AS "lastName", 
-             phone, 
-             notes 
+      SELECT id,
+             first_name AS "firstName",
+             last_name AS "lastName",
+             phone,
+             notes
         FROM customers
-        WHERE first_name LIKE '%$1%' OR
-              last_name LIKE '%$2%'`,
-              [search1, search2]);
+        WHERE first_name LIKE $1 OR
+              last_name LIKE $2`,
+              [`%${search1}%`, `%${search2}%`]);
 
-    return results.rows.map(c => new Customer(c));      
+    return results.rows.map(c => new Customer(c));
   }
 
+
+
+  /** Find top 10 customers by number of reservations */
+
+  static async topCustomers() {
+    const results = await db.query(
+      `SELECT c.id,
+              c.first_name AS "firstName",
+              c.last_name AS "lastName",
+              c.phone,
+              c.notes,
+              COUNT(*) AS number_reservations
+       FROM customers AS c
+       JOIN reservations
+       ON customer_id = c.id
+       GROUP BY c.id, c.first_name, c.last_name, c.phone, c.notes
+       ORDER BY COUNT(*) DESC
+       LIMIT 10`
+    )
+
+    return results.rows.map(c => new Customer(c));
+  }
+
+  /**
+   * If someone tries to assign a falsey value to a customer’s
+   * notes, the value instead gets assigned to an empty string.
+   */
+  set notes(note) {
+    this._notes = note || "";
+  }
 }
 
 module.exports = Customer;
